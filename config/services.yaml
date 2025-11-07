@@ -1,0 +1,12 @@
+services:
+  user-service:
+    build: true
+    port: 8081
+
+  product-service:
+    build: true
+    port: 8082
+
+  order-service:
+    build: true
+    port: 8083
