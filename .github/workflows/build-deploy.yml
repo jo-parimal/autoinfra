@@ -10,14 +10,16 @@ jobs:
       EC2_IP: ${{ secrets.EC2_IP }}
       DB_ENDPOINT: ${{ secrets.DB_ENDPOINT }}
       DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Java & maven
+      - name: Set up Java & Maven
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
+
       - name: Install tools
         run: |
           sudo apt-get update -y
@@ -26,20 +28,23 @@ jobs:
 
       - name: Build services where required
         run: |
-          python3 - <<'PY'
+          python3 <<'PYCODE'
 import yaml, subprocess, os
-cfg = yaml.safe_load(open("config/services.yaml"))
+
+with open("config/services.yaml") as f:
+    cfg = yaml.safe_load(f)
+
 for name, opt in cfg["services"].items():
     if opt.get("build", False):
-        print("Building", name)
+        print(f"Building {name}...")
         path = f"services/{name}"
         if os.path.exists(os.path.join(path, "pom.xml")):
-            subprocess.run(["mvn","-f",f"{path}/pom.xml","-B","clean","package"], check=True)
+            subprocess.run(["mvn", "-f", f"{path}/pom.xml", "-B", "clean", "package"], check=True)
         else:
-            print("No pom.xml for", name)
+            print(f"No pom.xml for {name}")
     else:
-        print("Skipping build for", name)
-PY
+        print(f"Skipping build for {name} (prebuilt jar)")
+PYCODE
 
       - name: Recreate SSH private key file from secret
         run: |
