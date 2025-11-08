@@ -1,4 +1,4 @@
-package main.java.com.autoinfra.order.controller;
+package com.autoinfra.order.controller;
 import com.autoinfra.order.dto.OrderDto;
 import com.autoinfra.order.service.OrderService;
 import org.springframework.web.bind.annotation.*;

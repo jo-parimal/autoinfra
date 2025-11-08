@@ -1,4 +1,4 @@
-package main.java.com.autoinfra.order.entity;
+package com.autoinfra.order.entity;
 import jakarta.persistence.*;
 
 @Entity

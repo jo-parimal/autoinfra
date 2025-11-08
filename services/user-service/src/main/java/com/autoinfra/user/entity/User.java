@@ -1,4 +1,4 @@
-package main.java.com.autoinfra.user.entity;
+package com.autoinfra.user.entity;
 import jakarta.persistence.*;
 
 @Entity

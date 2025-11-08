@@ -1,4 +1,4 @@
-package main.java.com.autoinfra.order.repo;
+package com.autoinfra.order.repo;
 import com.autoinfra.order.entity.Order;
 import org.springframework.data.jpa.repository.JpaRepository;
 

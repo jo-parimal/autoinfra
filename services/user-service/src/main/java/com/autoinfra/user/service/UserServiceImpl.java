@@ -1,4 +1,4 @@
-package main.java.com.autoinfra.user.service;
+package com.autoinfra.user.service;
 import com.autoinfra.user.dto.UserDto;
 import com.autoinfra.user.entity.User;
 import com.autoinfra.user.repo.UserRepository;
