@@ -5,7 +5,7 @@ if [ "$#" -lt 2 ]; then
   echo "Usage: $0 <EC2_IP> <PATH_TO_PRIVATE_KEY_PEM> [DB_HOST]"
   exit 2
 fi
-
+#just a cmnt
 EC2_IP="$1"
 SSH_KEY="$2" 
 DB_HOST="${3:-}"   # optional third arg

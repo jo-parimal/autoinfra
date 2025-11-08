@@ -53,5 +53,5 @@ jobs:
           DB_ENDPOINT: ${{ secrets.DB_ENDPOINT }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
         run: |
-          chmod +x scripts/deploy_services.sh
-          ./scripts/deploy_services.sh "${{ secrets.EC2_IP }}" ./id_rsa "${{ secrets.DB_ENDPOINT }}"
+          chmod +x Scripts/deploy_services.sh
+          ./Scripts/deploy_services.sh "${{ secrets.EC2_IP }}" ./id_rsa "${{ secrets.DB_ENDPOINT }}"
