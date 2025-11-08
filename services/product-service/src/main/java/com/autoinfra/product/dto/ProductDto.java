@@ -1,4 +1,4 @@
-package main.java.com.autoinfra.product.dto;
+package com.autoinfra.product.dto;
 public class ProductDto {
   private Long id;
   private String name;

@@ -1,4 +1,4 @@
-package main.java.com.autoinfra.order;
+package com.autoinfra.order;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication

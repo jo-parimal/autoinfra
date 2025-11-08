@@ -1,4 +1,4 @@
-package main.java.com.autoinfra.user.dto;
+package com.autoinfra.user.dto;
 public class UserDto {
   private Long id;
   private String name;

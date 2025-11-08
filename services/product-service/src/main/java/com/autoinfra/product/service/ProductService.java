@@ -1,4 +1,4 @@
-package main.java.com.autoinfra.product.service;
+package com.autoinfra.product.service;
 import com.autoinfra.product.dto.ProductDto;
 import java.util.List;
 

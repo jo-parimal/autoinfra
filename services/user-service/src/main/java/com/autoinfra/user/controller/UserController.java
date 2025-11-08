@@ -1,4 +1,4 @@
-package main.java.com.autoinfra.user.controller;
+package com.autoinfra.user.controller;
 
 import com.autoinfra.user.dto.UserDto;
 import com.autoinfra.user.service.UserService;

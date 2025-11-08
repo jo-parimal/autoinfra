@@ -1,4 +1,4 @@
-package main.java.com.autoinfra.order.dto;
+package com.autoinfra.order.dto;
 public class OrderDto {
   private Long id;
   private Long userId;

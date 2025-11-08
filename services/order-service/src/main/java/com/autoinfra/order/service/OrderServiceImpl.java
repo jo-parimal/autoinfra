@@ -1,4 +1,4 @@
-package main.java.com.autoinfra.order.service;
+package com.autoinfra.order.service;
 import com.autoinfra.order.dto.OrderDto;
 import com.autoinfra.order.entity.Order;
 import com.autoinfra.order.repo.OrderRepository;
