@@ -38,16 +38,14 @@ jobs:
           chmod 600 autoinfra_key.pem
           ls -l autoinfra_key.pem autoinfra_key.pub
 
-      - name: Prepare terraform vars file (clean, no duplicates)
+      - name: Prepare terraform vars file (safe heredoc)
         run: |
           mkdir -p $TF_WORKING_DIR
-          cat <<'EOF' > $TF_WORKING_DIR/terraform.tfvars
-public_key_path = "${{ github.workspace }}/autoinfra_key.pub"
-db_password     = "ChangeMeNow123!"
-aws_region      = "ap-south-1"
-EOF
+          echo 'public_key_path = "'"${GITHUB_WORKSPACE}"'/autoinfra_key.pub"' > $TF_WORKING_DIR/terraform.tfvars
+          echo 'db_password     = "ChangeMeNow123!"' >> $TF_WORKING_DIR/terraform.tfvars
+          echo 'aws_region      = "ap-south-1"' >> $TF_WORKING_DIR/terraform.tfvars
           echo "Prepared $TF_WORKING_DIR/terraform.tfvars:"
-          sed -n '1,200p' $TF_WORKING_DIR/terraform.tfvars
+          cat $TF_WORKING_DIR/terraform.tfvars
 
       - name: Terraform init & apply
         env:
