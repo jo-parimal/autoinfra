@@ -34,7 +34,6 @@ jobs:
           set -e
           ssh-keygen -t rsa -b 4096 -m PEM -f ./autoinfra_key -N "" -C "autoinfra_deploy_key"
           openssl rsa -in ./autoinfra_key -outform PEM -out ./autoinfra_key.pem
-
           chmod 600 autoinfra_key.pem
           ls -l autoinfra_key.pem autoinfra_key.pub
 
