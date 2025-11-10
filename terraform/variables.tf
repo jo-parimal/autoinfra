@@ -26,7 +26,7 @@ variable "volume_size" {
 }
 
 variable "db_name" { default = "autoinfra" }
-variable "db_user" { default = "admin" }
+variable "db_user" { default = "infraadmin" }
 variable "db_password" { description = "RDS master password" }
 
 variable "ssh_cidr" {
