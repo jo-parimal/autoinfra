@@ -97,7 +97,7 @@ resource "aws_instance" "app_server" {
 resource "aws_db_instance" "postgres" {
   identifier             = "autoinfra-db"
   engine                 = "postgres"
-  engine_version         = "14.8"
+  engine_version         = "16.1"
   instance_class         = "db.t3.micro"
   allocated_storage      = 20
   db_name                = var.db_name
