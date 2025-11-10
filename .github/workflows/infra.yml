@@ -7,6 +7,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       TF_WORKING_DIR: terraform
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -20,35 +21,31 @@ jobs:
           sudo unzip -o /tmp/terraform.zip -d /usr/local/bin
           terraform -version
           # gh cli
-          type -p gh || (curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg && sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg && echo "deb [arch=$( dpkg --print-architecture ) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null && sudo apt update && sudo apt install -y gh)
+          type -p gh || (
+            curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
+            sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg
+            echo "deb [arch=$( dpkg --print-architecture ) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+            sudo apt update && sudo apt install -y gh
+          )
           gh --version
 
       - name: Generate SSH keypair (runner)
         run: |
           set -e
-          # generate keypair
           ssh-keygen -t rsa -b 4096 -m PEM -f ./autoinfra_key -N "" -C "autoinfra_deploy_key"
           openssl rsa -in ./autoinfra_key -outform PEM -out ./autoinfra_key.pem
-          # mv autoinfra_key.pub autoinfra_key.pub
+
           chmod 600 autoinfra_key.pem
           ls -l autoinfra_key.pem autoinfra_key.pub
 
-      - name: Prepare terraform vars file (uses generated public key)
+      - name: Prepare terraform vars file (clean, no duplicates)
         run: |
           mkdir -p $TF_WORKING_DIR
-          # copy example tfvars and override public_key_path
-          if [ -f "$TF_WORKING_DIR/terraform.tfvars.example" ]; then
-            cp $TF_WORKING_DIR/terraform.tfvars.example $TF_WORKING_DIR/terraform.tfvars
-          fi
-          # point to the generated public key in repo workspace
-          echo "public_key_path = \"${{ github.workspace }}/autoinfra_key.pub\"" > $TF_WORKING_DIR/terraform.tfvars.extra
-          echo "db_password = \"ChangeMeNow123!\"" >> $TF_WORKING_DIR/terraform.tfvars.extra
-          # merge if tfvars exists
-          if [ -f "$TF_WORKING_DIR/terraform.tfvars" ]; then
-            cat $TF_WORKING_DIR/terraform.tfvars.extra >> $TF_WORKING_DIR/terraform.tfvars
-          else
-            mv $TF_WORKING_DIR/terraform.tfvars.extra $TF_WORKING_DIR/terraform.tfvars
-          fi
+          cat > $TF_WORKING_DIR/terraform.tfvars <<EOF
+public_key_path = "${{ github.workspace }}/autoinfra_key.pub"
+db_password     = "ChangeMeNow123!"
+aws_region      = "ap-south-1"
+EOF
           echo "Prepared $TF_WORKING_DIR/terraform.tfvars:"
           sed -n '1,200p' $TF_WORKING_DIR/terraform.tfvars
 
@@ -56,7 +53,7 @@ jobs:
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: ${{ vars.AWS_REGION || 'ap-south-1' }}
+          AWS_DEFAULT_REGION: ap-south-1
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: |
           terraform init -input=false
@@ -79,15 +76,12 @@ jobs:
           TF_OUT_JSON="../tf_outputs.json"
           EC2_IP=$(jq -r '.ec2_public_ip.value' $TF_OUT_JSON)
           DB_ENDPOINT=$(jq -r '.db_endpoint.value' $TF_OUT_JSON)
-          # Use the same db_password we wrote earlier
           DB_PASSWORD="ChangeMeNow123!"
-          # the private key content from generated file
           EC2_SSH_KEY="$(base64 ./autoinfra_key.pem)"
+
           echo "Writing secrets to repository..."
-          # gh secret set encrypts and writes; using GH CLI
           echo "$EC2_IP" | gh secret set EC2_IP
           echo "$DB_ENDPOINT" | gh secret set DB_ENDPOINT
           echo "$DB_PASSWORD" | gh secret set DB_PASSWORD
-          # store base64-encoded private key so we can reconstruct on runner
           echo "$EC2_SSH_KEY" | gh secret set EC2_SSH_KEY_BASE64
           echo "Done. EC2_IP and DB_ENDPOINT stored as secrets."
