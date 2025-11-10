@@ -63,13 +63,17 @@ jobs:
           terraform output -json > ../tf_outputs.json
           jq . ../tf_outputs.json
 
-      - name: Install gh and authenticate
+      # ✅ Fixed authentication block
+      - name: Authenticate GitHub CLI
         env:
           GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
-          echo "${{ secrets.GH_PAT }}" | gh auth login --with-token
+          gh auth setup-git
+          gh auth status
 
       - name: Create repo secrets (EC2_IP, DB_ENDPOINT, DB_PASSWORD, EC2_SSH_KEY)
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
           TF_OUT_JSON="../tf_outputs.json"
           EC2_IP=$(jq -r '.ec2_public_ip.value' $TF_OUT_JSON)
@@ -81,4 +85,4 @@ jobs:
           echo "$DB_ENDPOINT" | gh secret set DB_ENDPOINT
           echo "$DB_PASSWORD" | gh secret set DB_PASSWORD
           echo "$EC2_SSH_KEY" | gh secret set EC2_SSH_KEY_BASE64
-          echo "✅ Done — EC2_IP and DB_ENDPOINT stored as secrets."
+          echo "✅ Done — EC2_IP, DB_ENDPOINT, and key stored as secrets."
