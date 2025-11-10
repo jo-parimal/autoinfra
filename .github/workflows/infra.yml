@@ -1,4 +1,5 @@
 name: Provision infra and set secrets
+
 on:
   workflow_dispatch:
 
@@ -16,11 +17,11 @@ jobs:
         run: |
           sudo apt-get update -y
           sudo apt-get install -y unzip jq
-          # terraform
+          # Install Terraform
           wget https://releases.hashicorp.com/terraform/1.5.7/terraform_1.5.7_linux_amd64.zip -O /tmp/terraform.zip
           sudo unzip -o /tmp/terraform.zip -d /usr/local/bin
           terraform -version
-          # gh cli
+          # Install GitHub CLI
           type -p gh || (
             curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
             sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg
@@ -40,7 +41,7 @@ jobs:
       - name: Prepare terraform vars file (clean, no duplicates)
         run: |
           mkdir -p $TF_WORKING_DIR
-          cat > $TF_WORKING_DIR/terraform.tfvars <<EOF
+          cat <<'EOF' > $TF_WORKING_DIR/terraform.tfvars
 public_key_path = "${{ github.workspace }}/autoinfra_key.pub"
 db_password     = "ChangeMeNow123!"
 aws_region      = "ap-south-1"
@@ -77,10 +78,9 @@ EOF
           DB_ENDPOINT=$(jq -r '.db_endpoint.value' $TF_OUT_JSON)
           DB_PASSWORD="ChangeMeNow123!"
           EC2_SSH_KEY="$(base64 ./autoinfra_key.pem)"
-
           echo "Writing secrets to repository..."
           echo "$EC2_IP" | gh secret set EC2_IP
           echo "$DB_ENDPOINT" | gh secret set DB_ENDPOINT
           echo "$DB_PASSWORD" | gh secret set DB_PASSWORD
           echo "$EC2_SSH_KEY" | gh secret set EC2_SSH_KEY_BASE64
-          echo "Done. EC2_IP and DB_ENDPOINT stored as secrets."
+          echo "✅ Done — EC2_IP and DB_ENDPOINT stored as secrets."
