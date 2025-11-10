@@ -14,7 +14,7 @@ variable "key_name" {
 
 variable "ami_id" {
   description = "Ubuntu 22.04 AMI ID for region (change if needed)"
-  default     = "ami-0ecb62995f68bb549"
+  default     = "ami-087d1c9a513324697"
 }
 
 variable "instance_type" {
