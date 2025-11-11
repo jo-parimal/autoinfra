@@ -54,16 +54,21 @@ jobs:
           AWS_DEFAULT_REGION: ap-south-1
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: |
+          set -e
           terraform init -input=false
           terraform apply -auto-approve -input=false
+          # Save outputs to JSON in the same folder
+          terraform output -json > tf_outputs.json
+          echo "Terraform outputs:"
+          cat tf_outputs.json
 
       - name: Capture terraform outputs
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: |
-          terraform output -json > ../tf_outputs.json
-          jq . ../tf_outputs.json
+          echo "Reading Terraform outputs..."
+          jq . tf_outputs.json
 
-      # ✅ Fixed authentication block
+      # ✅ GitHub CLI Authentication (fixed)
       - name: Authenticate GitHub CLI
         env:
           GH_TOKEN: ${{ secrets.GH_PAT }}
@@ -74,12 +79,13 @@ jobs:
       - name: Create repo secrets (EC2_IP, DB_ENDPOINT, DB_PASSWORD, EC2_SSH_KEY)
         env:
           GH_TOKEN: ${{ secrets.GH_PAT }}
+        working-directory: ${{ env.TF_WORKING_DIR }}
         run: |
-          TF_OUT_JSON="../tf_outputs.json"
+          TF_OUT_JSON="tf_outputs.json"
           EC2_IP=$(jq -r '.ec2_public_ip.value' $TF_OUT_JSON)
           DB_ENDPOINT=$(jq -r '.db_endpoint.value' $TF_OUT_JSON)
           DB_PASSWORD="ChangeMeNow123!"
-          EC2_SSH_KEY="$(base64 ./autoinfra_key.pem)"
+          EC2_SSH_KEY="$(base64 ../autoinfra_key.pem)"
           echo "Writing secrets to repository..."
           echo "$EC2_IP" | gh secret set EC2_IP
           echo "$DB_ENDPOINT" | gh secret set DB_ENDPOINT
