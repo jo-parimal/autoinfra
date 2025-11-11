@@ -91,4 +91,4 @@ jobs:
           echo "$DB_ENDPOINT" | gh secret set DB_ENDPOINT
           echo "$DB_PASSWORD" | gh secret set DB_PASSWORD
           echo "$EC2_SSH_KEY" | gh secret set EC2_SSH_KEY_BASE64
-          echo "✅ Done — EC2_IP, DB_ENDPOINT, and key stored as secrets."
+          echo "✅ Done — EC2_IP, DB_ENDPOINT, and key stored as secrets."  
