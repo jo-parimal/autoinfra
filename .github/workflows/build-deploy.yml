@@ -14,13 +14,20 @@ jobs:
       DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up Java & Maven
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '17'
+
+      - name: Validate deploy secrets
+        run: |
+          test -n "${{ secrets.EC2_IP }}"
+          test -n "${{ secrets.EC2_SSH_KEY_BASE64 }}"
+          test -n "${{ secrets.DB_ENDPOINT }}"
+          test -n "${{ secrets.DB_PASSWORD }}"
 
       - name: Install tools
         run: |
@@ -45,7 +52,7 @@ jobs:
       - name: Recreate SSH private key file from secret
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.EC2_SSH_KEY_BASE64 }}" | base64 --decode > id_rsa
+          printf '%s' "${{ secrets.EC2_SSH_KEY_BASE64 }}" | base64 --decode > id_rsa
           chmod 600 id_rsa
           ls -l id_rsa
 
