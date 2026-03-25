@@ -9,6 +9,8 @@ fi
 EC2_IP="$1"
 SSH_KEY="$2" 
 DB_HOST="${3:-}"   # optional third arg
+DB_USER="${DB_USER:-infraadmin}"
+DB_PASSWORD="${DB_PASSWORD:-}"
 
 EC2_USER="deployer"   # we installed public key for this user
 SERVICES_DIR="services"
@@ -18,17 +20,20 @@ if [ ! -d "${SERVICES_DIR}" ]; then
   exit 3
 fi
 
-index=0
-for svc in $(ls -1 ${SERVICES_DIR}); do
-  index=$((index + 1))
-  PORT=$((8080 + index))
+SERVICES=("user-service:8081" "product-service:8082" "order-service:8083")
+
+for item in "${SERVICES[@]}"; do
+  IFS=":" read -r svc PORT <<<"${item}"
   REMOTE_DIR="/opt/services/${svc}"
   echo "Deploying ${svc} -> ${EC2_IP}:${REMOTE_DIR} (port ${PORT})"
 
   # determine local jar
   JAR_LOCAL=""
-  if ls ${SERVICES_DIR}/${svc}/target/*.jar 1> /dev/null 2>&1; then
-    JAR_LOCAL=$(ls ${SERVICES_DIR}/${svc}/target/*.jar | head -1)
+  shopt -s nullglob
+  jar_candidates=("${SERVICES_DIR}/${svc}/target/"*.jar)
+  shopt -u nullglob
+  if [ ${#jar_candidates[@]} -gt 0 ]; then
+    JAR_LOCAL="${jar_candidates[0]}"
   elif [ -f "${SERVICES_DIR}/${svc}/app.jar" ]; then
     JAR_LOCAL="${SERVICES_DIR}/${svc}/app.jar"
   else
@@ -51,7 +56,8 @@ After=network.target
 [Service]
 User=deployer
 WorkingDirectory=%REMOTE_DIR%
-ExecStart=/usr/bin/java -jar %REMOTE_DIR%/%JAR_NAME% --server.port=%PORT% %DB_ARG%
+EnvironmentFile=%REMOTE_DIR%/.env
+ExecStart=/usr/bin/java -jar %REMOTE_DIR%/%JAR_NAME% --server.port=%PORT%
 SuccessExitStatus=143
 Restart=on-failure
 RestartSec=5
@@ -68,14 +74,33 @@ SSH_COMMAND
 
 # prepare values
 JAR_BASENAME=$(basename "${JAR_LOCAL}")
-DB_ARG=""
+ENV_FILE_CONTENT=""
 if [ -n "${DB_HOST}" ]; then
-  DB_ARG="--spring.datasource.url=jdbc:postgresql://${DB_HOST}:5432/autoinfra --spring.datasource.username=admin --spring.datasource.password=${DB_PASSWORD:-admin}"
+  if [ -z "${DB_PASSWORD}" ]; then
+    echo "DB_PASSWORD is required when DB_HOST/DB_ENDPOINT is provided."
+    exit 4
+  fi
+  DB_HOSTNAME="${DB_HOST%%:*}"
+  DB_PORT="${DB_HOST##*:}"
+  if [ "${DB_PORT}" = "${DB_HOST}" ]; then
+    DB_PORT="5432"
+  fi
+  ENV_FILE_CONTENT=$(cat <<EOF
+SPRING_DATASOURCE_URL=jdbc:postgresql://${DB_HOSTNAME}:${DB_PORT}/autoinfra
+SPRING_DATASOURCE_USERNAME=${DB_USER}
+SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
+EOF
+)
 fi
 
 # substitute and run remote
-REMOTE_CMD=$(echo "${SSH_CMD}" | sed -e "s|%REMOTE_DIR%|${REMOTE_DIR}|g" -e "s|%SVC%|${svc}|g" -e "s|%JAR_NAME%|${JAR_BASENAME}|g" -e "s|%PORT%|${PORT}|g" -e "s|%DB_ARG%|${DB_ARG}|g")
+REMOTE_CMD=$(echo "${SSH_CMD}" | sed -e "s|%REMOTE_DIR%|${REMOTE_DIR}|g" -e "s|%SVC%|${svc}|g" -e "s|%JAR_NAME%|${JAR_BASENAME}|g" -e "s|%PORT%|${PORT}|g")
 ssh -i "${SSH_KEY}" -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_IP} "${REMOTE_CMD}"
+if [ -n "${ENV_FILE_CONTENT}" ]; then
+  printf '%s\n' "${ENV_FILE_CONTENT}" | ssh -i "${SSH_KEY}" -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_IP} "cat > /tmp/${svc}.env && sudo mv /tmp/${svc}.env ${REMOTE_DIR}/.env && sudo chown deployer:deployer ${REMOTE_DIR}/.env && sudo chmod 600 ${REMOTE_DIR}/.env && sudo systemctl restart ${svc}.service"
+else
+  ssh -i "${SSH_KEY}" -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_IP} "touch ${REMOTE_DIR}/.env && sudo chown deployer:deployer ${REMOTE_DIR}/.env && sudo chmod 600 ${REMOTE_DIR}/.env"
+fi
 
 done
 
