@@ -9,6 +9,8 @@ fi
 EC2_IP="$1"
 SSH_KEY="$2" 
 DB_HOST="${3:-}"   # optional third arg
+DB_USER="${DB_USER:-infraadmin}"
+DB_PASSWORD="${DB_PASSWORD:-}"
 
 EC2_USER="deployer"   # we installed public key for this user
 SERVICES_DIR="services"
@@ -70,7 +72,12 @@ SSH_COMMAND
 JAR_BASENAME=$(basename "${JAR_LOCAL}")
 DB_ARG=""
 if [ -n "${DB_HOST}" ]; then
-  DB_ARG="--spring.datasource.url=jdbc:postgresql://${DB_HOST}:5432/autoinfra --spring.datasource.username=admin --spring.datasource.password=${DB_PASSWORD:-admin}"
+  DB_HOSTNAME="${DB_HOST%%:*}"
+  DB_PORT="${DB_HOST##*:}"
+  if [ "${DB_PORT}" = "${DB_HOST}" ]; then
+    DB_PORT="5432"
+  fi
+  DB_ARG="--spring.datasource.url=jdbc:postgresql://${DB_HOSTNAME}:${DB_PORT}/autoinfra --spring.datasource.username=${DB_USER} --spring.datasource.password=${DB_PASSWORD}"
 fi
 
 # substitute and run remote

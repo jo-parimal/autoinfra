@@ -10,6 +10,7 @@ jobs:
     env:
       EC2_IP: ${{ secrets.EC2_IP }}
       DB_ENDPOINT: ${{ secrets.DB_ENDPOINT }}
+      DB_USER: ${{ secrets.DB_USER }}
       DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
 
     steps:
@@ -51,7 +52,15 @@ jobs:
       - name: Run deploy script
         env:
           DB_ENDPOINT: ${{ secrets.DB_ENDPOINT }}
+          DB_USER: ${{ secrets.DB_USER }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
         run: |
           chmod +x scripts/deploy_services.sh
           ./scripts/deploy_services.sh "${{ secrets.EC2_IP }}" ./id_rsa "${{ secrets.DB_ENDPOINT }}"
+
+      - name: Run post-deploy health checks
+        env:
+          DB_ENDPOINT: ${{ secrets.DB_ENDPOINT }}
+        run: |
+          chmod +x scripts/health_check.sh
+          ./scripts/health_check.sh "${{ secrets.EC2_IP }}" ./id_rsa "${{ secrets.DB_ENDPOINT }}"

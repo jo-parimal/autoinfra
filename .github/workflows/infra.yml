@@ -2,6 +2,18 @@ name: Provision infra and set secrets
 
 on:
   workflow_dispatch:
+    inputs:
+      db_password:
+        description: "RDS master password"
+        required: true
+      db_user:
+        description: "RDS master username"
+        required: false
+        default: "infraadmin"
+      aws_region:
+        description: "AWS region"
+        required: false
+        default: "ap-south-1"
 
 jobs:
   provision:
@@ -42,8 +54,9 @@ jobs:
         run: |
           mkdir -p $TF_WORKING_DIR
           echo 'public_key_path = "'"${GITHUB_WORKSPACE}"'/autoinfra_key.pub"' > $TF_WORKING_DIR/terraform.tfvars
-          echo 'db_password     = "ChangeMeNow123!"' >> $TF_WORKING_DIR/terraform.tfvars
-          echo 'aws_region      = "ap-south-1"' >> $TF_WORKING_DIR/terraform.tfvars
+          echo 'db_password     = "'"${{ github.event.inputs.db_password }}"'"' >> $TF_WORKING_DIR/terraform.tfvars
+          echo 'db_user         = "'"${{ github.event.inputs.db_user }}"'"' >> $TF_WORKING_DIR/terraform.tfvars
+          echo 'aws_region      = "'"${{ github.event.inputs.aws_region }}"'"' >> $TF_WORKING_DIR/terraform.tfvars
           echo "Prepared $TF_WORKING_DIR/terraform.tfvars:"
           cat $TF_WORKING_DIR/terraform.tfvars
 
@@ -51,7 +64,7 @@ jobs:
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: ap-south-1
+          AWS_DEFAULT_REGION: ${{ github.event.inputs.aws_region }}
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: |
           set -e
@@ -84,11 +97,13 @@ jobs:
           TF_OUT_JSON="tf_outputs.json"
           EC2_IP=$(jq -r '.ec2_public_ip.value' $TF_OUT_JSON)
           DB_ENDPOINT=$(jq -r '.db_endpoint.value' $TF_OUT_JSON)
-          DB_PASSWORD="ChangeMeNow123!"
+          DB_PASSWORD="${{ github.event.inputs.db_password }}"
+          DB_USER="${{ github.event.inputs.db_user }}"
           EC2_SSH_KEY="$(base64 ../autoinfra_key.pem)"
           echo "Writing secrets to repository..."
           echo "$EC2_IP" | gh secret set EC2_IP
           echo "$DB_ENDPOINT" | gh secret set DB_ENDPOINT
           echo "$DB_PASSWORD" | gh secret set DB_PASSWORD
+          echo "$DB_USER" | gh secret set DB_USER
           echo "$EC2_SSH_KEY" | gh secret set EC2_SSH_KEY_BASE64
-          echo "✅ Done — EC2_IP, DB_ENDPOINT, and key stored as secrets."  
+          echo "✅ Done — EC2_IP, DB_ENDPOINT, DB_PASSWORD, DB_USER and key stored as secrets."  
