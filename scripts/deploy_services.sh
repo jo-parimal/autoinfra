@@ -76,21 +76,12 @@ SSH_COMMAND
 JAR_BASENAME=$(basename "${JAR_LOCAL}")
 ENV_FILE_CONTENT=""
 if [ -n "${DB_HOST}" ]; then
-  if [ -z "${DB_PASSWORD}" ]; then
-    echo "DB_PASSWORD is required when DB_HOST/DB_ENDPOINT is provided."
-    exit 4
-  fi
   DB_HOSTNAME="${DB_HOST%%:*}"
   DB_PORT="${DB_HOST##*:}"
   if [ "${DB_PORT}" = "${DB_HOST}" ]; then
     DB_PORT="5432"
   fi
-  ENV_FILE_CONTENT=$(cat <<EOF
-SPRING_DATASOURCE_URL=jdbc:postgresql://${DB_HOSTNAME}:${DB_PORT}/autoinfra
-SPRING_DATASOURCE_USERNAME=${DB_USER}
-SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
-EOF
-)
+  DB_ARG="--spring.datasource.url=jdbc:postgresql://${DB_HOSTNAME}:${DB_PORT}/autoinfra --spring.datasource.username=${DB_USER} --spring.datasource.password=${DB_PASSWORD}"
 fi
 
 # substitute and run remote

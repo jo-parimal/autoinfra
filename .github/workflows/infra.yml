@@ -57,7 +57,8 @@ jobs:
           echo 'db_password     = "'"${{ github.event.inputs.db_password }}"'"' >> $TF_WORKING_DIR/terraform.tfvars
           echo 'db_user         = "'"${{ github.event.inputs.db_user }}"'"' >> $TF_WORKING_DIR/terraform.tfvars
           echo 'aws_region      = "'"${{ github.event.inputs.aws_region }}"'"' >> $TF_WORKING_DIR/terraform.tfvars
-          echo "Prepared $TF_WORKING_DIR/terraform.tfvars (sensitive values hidden)."
+          echo "Prepared $TF_WORKING_DIR/terraform.tfvars:"
+          cat $TF_WORKING_DIR/terraform.tfvars
 
       - name: Terraform init & apply
         env:
@@ -98,11 +99,11 @@ jobs:
           DB_ENDPOINT=$(jq -r '.db_endpoint.value' $TF_OUT_JSON)
           DB_PASSWORD="${{ github.event.inputs.db_password }}"
           DB_USER="${{ github.event.inputs.db_user }}"
-          EC2_SSH_KEY="$(base64 -w0 ../autoinfra_key.pem)"
+          EC2_SSH_KEY="$(base64 ../autoinfra_key.pem)"
           echo "Writing secrets to repository..."
-          printf '%s' "$EC2_IP" | gh secret set EC2_IP
-          printf '%s' "$DB_ENDPOINT" | gh secret set DB_ENDPOINT
-          printf '%s' "$DB_PASSWORD" | gh secret set DB_PASSWORD
-          printf '%s' "$DB_USER" | gh secret set DB_USER
-          printf '%s' "$EC2_SSH_KEY" | gh secret set EC2_SSH_KEY_BASE64
+          echo "$EC2_IP" | gh secret set EC2_IP
+          echo "$DB_ENDPOINT" | gh secret set DB_ENDPOINT
+          echo "$DB_PASSWORD" | gh secret set DB_PASSWORD
+          echo "$DB_USER" | gh secret set DB_USER
+          echo "$EC2_SSH_KEY" | gh secret set EC2_SSH_KEY_BASE64
           echo "✅ Done — EC2_IP, DB_ENDPOINT, DB_PASSWORD, DB_USER and key stored as secrets."  
